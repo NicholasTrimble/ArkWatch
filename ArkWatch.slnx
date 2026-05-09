@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="arkwatch.client/arkwatch.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="ArkWatch.Server/ArkWatch.Server.csproj" />
+</Solution>

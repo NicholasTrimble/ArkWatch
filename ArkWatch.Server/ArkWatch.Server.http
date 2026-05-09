@@ -1,0 +1,6 @@
+@ArkWatch.Server_HostAddress = http://localhost:5191
+
+GET {{ArkWatch.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

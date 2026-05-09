@@ -1,0 +1,17 @@
+<div class="news-container">
+  <h1>ARKWATCH: Live Arkansas Weather Intelligence</h1>
+  <hr />
+
+  <div *ngIf="newsHeadlines.length === 0">
+    <p>Searching for active threats... No immediate danger detected.</p>
+  </div>
+
+  <div class="headline-grid">
+    <!-- This loop creates a "News Card" for every alert in our list -->
+    <div *ngFor="let alert of newsHeadlines" class="news-card" [attr.data-urgency]="alert.urgencyLevel">
+      <h2>{{ alert.headline }}</h2>
+      <p class="timestamp">Reported: {{ alert.systemTimestamp | date:'short' }}</p>
+      <p class="instructions">{{ alert.detailedInstructions }}</p>
+    </div>
+  </div>
+</div>

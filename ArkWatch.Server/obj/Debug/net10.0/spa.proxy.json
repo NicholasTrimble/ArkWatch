@@ -1,0 +1,10 @@
+{
+"SpaProxyServer": {
+"ServerUrl": "https://localhost:52333",
+"RedirectUrl": "",
+"LaunchCommand": "npm start",
+"WorkingDirectory": "C:\\Users\\Nick\\source\\repos\\ArkWatch\\ArkWatch.Server\\..\\arkwatch.client",
+"MaxTimeoutInSeconds": "120",
+"KeepRunning": "false"
+}
+}

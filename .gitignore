@@ -1,0 +1,8 @@
+.vs/
+[Bb]in/
+[Ob]j/
+*.user
+*.db
+node_modules/
+
+
