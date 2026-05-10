@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@types/leaflet": "^1.9.21"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  }
+}

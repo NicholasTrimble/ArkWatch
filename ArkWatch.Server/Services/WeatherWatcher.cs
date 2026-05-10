@@ -22,23 +22,40 @@ public class WeatherWatcher : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // This loop keeps running until you stop the app
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Watcher is checking for Arkansas weather alerts...");
+            _logger.LogInformation("Watcher is starting up...");
 
             try
             {
-                // We have to create a "Scope" to talk to the database from a background worker
+                // 1. OPEN THE TOOLBOX: Everything that needs the database happens inside these brackets
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var database = scope.ServiceProvider.GetRequiredService<ArkWatchDbContext>();
                     var client = _httpClientFactory.CreateClient();
 
-                    // The Weather Service requires a 'User-Agent' so they know who is asking
-                    client.DefaultRequestHeaders.Add("User-Agent", "(ArkWatchDevProject, your@email.com)");
+                    // 2. CHECK THE SHELVES: See if we have any data
+                    int count = database.StoredAlerts.Count();
+                    _logger.LogInformation("I found {count} alerts in the database.", count);
 
-                    // Get the latest active alerts for Arkansas
+                    if (count == 0)
+                    {
+                        _logger.LogWarning("Database is empty! Adding the Test Alert now...");
+                        var testAlert = new Alert
+                        {
+                            SourceId = "TEST-123",
+                            Headline = "TORNADO WATCH: HEBER SPRINGS AREA",
+                            UrgencyLevel = "Extreme",
+                            DetailedInstructions = "This is a test. Seek shelter in a sturdy building.",
+                            SystemTimestamp = DateTime.UtcNow
+                        };
+                        database.StoredAlerts.Add(testAlert);
+                        await database.SaveChangesAsync(stoppingToken);
+                    }
+
+                    // 3. GET REAL DATA: Call the National Weather Service
+                    client.DefaultRequestHeaders.Add("User-Agent", "(ArkWatchProject, your@email.com)");
+
                     var response = await client.GetFromJsonAsync<NwsResponse>(
                         "https://api.weather.gov/alerts/active?area=AR", stoppingToken);
 
@@ -48,12 +65,8 @@ public class WeatherWatcher : BackgroundService
                         {
                             var alertData = feature.Properties;
 
-                            // Check if we ALREADY have this alert saved in our cabinet
-                            bool alreadyExists = database.StoredAlerts.Any(a => a.SourceId == alertData.Id);
-
-                            if (!alreadyExists)
+                            if (alertData.Severity == "Extreme" || alertData.Severity == "Severe")
                             {
-                                // Create a new entry for our database
                                 var newAlert = new Alert
                                 {
                                     SourceId = alertData.Id,
@@ -62,20 +75,18 @@ public class WeatherWatcher : BackgroundService
                                     DetailedInstructions = alertData.Description,
                                     SystemTimestamp = DateTime.UtcNow
                                 };
-
                                 database.StoredAlerts.Add(newAlert);
-                                _logger.LogWarning("NEW ALERT SAVED: {headline}", newAlert.Headline);
                             }
                         }
 
-                        // Actually "Lock in" the changes to the database
+                        // LOCK IN THE SAVES: This writes everything new to the database file
                         await database.SaveChangesAsync(stoppingToken);
                     }
-                }
+                } // <--- The "Toolbox" closes here
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "The Watcher hit a snag while checking the weather.");
+                _logger.LogError(ex, "The Watcher hit a snag.");
             }
 
             // Wait 1 minute before checking again

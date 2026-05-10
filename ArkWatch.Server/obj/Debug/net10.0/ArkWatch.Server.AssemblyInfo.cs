@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ArkWatch.Server")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+026e327c3dcfc76c9fdaafb2d050a1f6fc53c476")]
 [assembly: System.Reflection.AssemblyProductAttribute("ArkWatch.Server")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ArkWatch.Server")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

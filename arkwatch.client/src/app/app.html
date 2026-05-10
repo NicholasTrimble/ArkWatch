@@ -1,3 +1,33 @@
+<div class="view-controls">
+  <button (click)="toggleViewMode()" [class.warning-active]="isLocalMode">
+    {{ isLocalMode ? '🌎 SWITCH TO STATEWIDE VIEW' : '📍 SWITCH TO LOCAL VIEW' }}
+  </button>
+</div>
+
+<!-- Spacer -->
+<div style="height: 40px; width: 100%;"></div>
+
+<!-- TICKER SECTION (Self-contained) -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <div *ngIf="tickerItems.length === 0" class="ticker__item">
+      📡 CONNECTING TO LIVE THREAT FEED...
+    </div>
+
+    <div class="ticker__item" *ngFor="let item of tickerItems" [ngClass]="item.category">
+      <span *ngIf="item.category === 'warning'">⚠️ </span>
+      {{ item.text }}
+      <span class="separator"></span>
+    </div>
+  </div>
+</div>
+
+<!-- MAP SECTION -->
+<div class="map-section">
+  <div id="map"></div>
+</div>
+
+<!-- NEWS SECTION -->
 <div class="news-container">
   <h1>ARKWATCH: Live Arkansas Weather Intelligence</h1>
   <hr />
@@ -7,11 +37,25 @@
   </div>
 
   <div class="headline-grid">
-    <!-- This loop creates a "News Card" for every alert in our list -->
-    <div *ngFor="let alert of newsHeadlines" class="news-card" [attr.data-urgency]="alert.urgencyLevel">
+    <div *ngFor="let alert of newsHeadlines" 
+         class="news-card" 
+         [attr.data-urgency]="alert.urgencyLevel"
+         (click)="openModal(alert)"> <!-- Added click for Modal -->
       <h2>{{ alert.headline }}</h2>
       <p class="timestamp">Reported: {{ alert.systemTimestamp | date:'short' }}</p>
       <p class="instructions">{{ alert.detailedInstructions }}</p>
     </div>
+  </div>
+</div>
+
+<!-- MODAL SECTION -->
+<div class="modal-overlay" *ngIf="selectedAlert" (click)="closeModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()" [attr.data-urgency]="selectedAlert.urgencyLevel">
+    <button class="close-btn" (click)="closeModal()">×</button>
+    <span class="urgency-label">{{ selectedAlert.urgencyLevel }}</span>
+    <h2>{{ selectedAlert.headline }}</h2>
+    <p class="modal-time">{{ selectedAlert.systemTimestamp | date:'medium' }}</p>
+    <hr>
+    <p class="full-instructions">{{ selectedAlert.detailedInstructions }}</p>
   </div>
 </div>

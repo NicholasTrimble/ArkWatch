@@ -1,14 +1,12 @@
 using ArkWatch.Server.Data;
-using Microsoft.EntityFrameworkCore;
-using ArkWatch.Server.Data;
 using ArkWatch.Server.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// 1. ADD SERVICES
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
 builder.Services.AddDbContext<ArkWatchDbContext>(options =>
@@ -16,12 +14,19 @@ builder.Services.AddDbContext<ArkWatchDbContext>(options =>
 
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<WeatherWatcher>();
+
+// 2. DEFINE THE DOOR POLICY
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular",
+        policy => policy.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
+
 var app = builder.Build();
 
-app.UseDefaultFiles();
-app.MapStaticAssets();
-
-// Configure the HTTP request pipeline.
+// 3. CONFIGURE THE CONVEYOR BELT (Order Matters!)
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -29,10 +34,18 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// UseCors MUST come after UseRouting (implicit) and before MapControllers
+app.UseRouting();
+app.UseCors("AllowAngular");
+
 app.UseAuthorization();
 
+// This is what handles your /api/news calls
 app.MapControllers();
 
+// Handle the Angular files
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
