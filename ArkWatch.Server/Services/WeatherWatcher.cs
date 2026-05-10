@@ -28,13 +28,13 @@ public class WeatherWatcher : BackgroundService
 
             try
             {
-                // 1. OPEN THE TOOLBOX: Everything that needs the database happens inside these brackets
+                // 1. OPEN THE TOOLBOX
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var database = scope.ServiceProvider.GetRequiredService<ArkWatchDbContext>();
                     var client = _httpClientFactory.CreateClient();
 
-                    // 2. CHECK THE SHELVES: See if we have any data
+                    // 2. CHECK THE SHELVES
                     int count = database.StoredAlerts.Count();
                     _logger.LogInformation("I found {count} alerts in the database.", count);
 
@@ -53,7 +53,7 @@ public class WeatherWatcher : BackgroundService
                         await database.SaveChangesAsync(stoppingToken);
                     }
 
-                    // 3. GET REAL DATA: Call the National Weather Service
+                    // 3. GET REAL DATA
                     client.DefaultRequestHeaders.Add("User-Agent", "(ArkWatchProject, your@email.com)");
 
                     var response = await client.GetFromJsonAsync<NwsResponse>(
@@ -79,7 +79,7 @@ public class WeatherWatcher : BackgroundService
                             }
                         }
 
-                        // LOCK IN THE SAVES: This writes everything new to the database file
+                        // LOCK IN THE SAVES
                         await database.SaveChangesAsync(stoppingToken);
                     }
                 } // <--- The "Toolbox" closes here

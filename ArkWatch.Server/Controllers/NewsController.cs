@@ -24,13 +24,15 @@ namespace ArkWatch.Server.Controllers
                 .Take(20)
                 .ToListAsync();
 
-            // Mapping to a more useful object for the frontend
             var formattedHeadlines = alerts.Select(a => new {
                 a.SourceId,
                 a.Headline,
                 a.DetailedInstructions,
                 a.UrgencyLevel,
                 a.SystemTimestamp,
+                Expiration = a.Expiration ?? "N/A",
+                HailSize = a.HailSize ?? "0.00",
+                WindSpeed = a.WindSpeed ?? "0",
                 Category = GetCategory(a.UrgencyLevel)
             });
 

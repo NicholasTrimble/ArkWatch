@@ -4,46 +4,45 @@
   </button>
 </div>
 
-<!-- Spacer -->
-<div style="height: 40px; width: 100%;"></div>
+<div style="height: 20px;"></div>
 
-<!-- TICKER SECTION (Self-contained) -->
-<div class="ticker-wrap">
-  <div class="ticker">
-    <div *ngIf="tickerItems.length === 0" class="ticker__item">
-      📡 CONNECTING TO LIVE THREAT FEED...
+<div class="alert-bar" 
+     *ngIf="tickerItems && tickerItems.length > 0" 
+     [attr.data-category]="(tickerItems[currentIndex]?.UrgencyLevel || tickerItems[currentIndex]?.urgencyLevel || 'info').toLowerCase()"
+     (click)="openModalFromTicker()">
+  
+  <div class="alert-content">
+    <div class="alert-main-text">
+      {{ tickerItems[currentIndex]?.headline || tickerItems[currentIndex]?.Headline || 'NO DATA' }}
     </div>
-
-    <div class="ticker__item" *ngFor="let item of tickerItems" [ngClass]="item.category">
-      <span *ngIf="item.category === 'warning'">⚠️ </span>
-      {{ item.text }}
-      <span class="separator"></span>
+    
+    <div class="alert-sub-text">
+      <span class="location-tag">
+        AR: {{ isLocalMode ? 'CLEBURNE' : 'ARKANSAS' }}
+      </span>
+      <span class="tech-spec">EXP: {{ tickerItems[currentIndex]?.Expiration || 'N/A' }}</span>
+      <span class="tech-spec" *ngIf="tickerItems[currentIndex]?.HailSize">HAIL: {{ tickerItems[currentIndex]?.HailSize }} IN</span>
+      <span class="active-count">{{ tickerItems.length }} ACTIVE</span>
     </div>
   </div>
-</div>
 
-<!-- MAP SECTION -->
-<div class="map-section">
-  <div id="map"></div>
+  <div class="alert-nav">
+    <button (click)="$event.stopPropagation(); prevAlert()">◀</button>
+    <button (click)="$event.stopPropagation(); nextAlert()">▶</button>
+  </div>
 </div>
+<!-- MAP SECTION -->
+<div class="map-section"><div id="map"></div></div>
 
 <!-- NEWS SECTION -->
 <div class="news-container">
-  <h1>ARKWATCH: Live Arkansas Weather Intelligence</h1>
-  <hr />
-
-  <div *ngIf="newsHeadlines.length === 0">
-    <p>Searching for active threats... No immediate danger detected.</p>
-  </div>
-
   <div class="headline-grid">
     <div *ngFor="let alert of newsHeadlines" 
          class="news-card" 
-         [attr.data-urgency]="alert.urgencyLevel"
-         (click)="openModal(alert)"> <!-- Added click for Modal -->
-      <h2>{{ alert.headline }}</h2>
-      <p class="timestamp">Reported: {{ alert.systemTimestamp | date:'short' }}</p>
-      <p class="instructions">{{ alert.detailedInstructions }}</p>
+         [attr.data-urgency]="alert.urgencyLevel || alert.UrgencyLevel"
+         (click)="openModal(alert)">
+      <h2>{{ alert.headline || alert.Headline }}</h2>
+      <p class="instructions">{{ alert.detailedInstructions || alert.DetailedInstructions }}</p>
     </div>
   </div>
 </div>

@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit, ChangeDetectorRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, AfterViewInit, OnDestroy } from '@angular/core';
 import * as L from 'leaflet';
 
 @Component({
@@ -8,15 +8,16 @@ import * as L from 'leaflet';
   standalone: false,
   styleUrl: './app.css'
 })
-export class App implements OnInit, AfterViewInit {
-  private allHeadlines: any[] = [];
-  private allTickerItems: any[] = [];
-  private map!: L.Map;
-
+export class App implements OnInit, AfterViewInit, OnDestroy {
+  public allHeadlines: any[] = [];
   public newsHeadlines: any[] = [];
-  public tickerItems: any[] = [];
-  public isLocalMode: boolean = false;
+  public tickerItems: any[] = []; 
+  public currentIndex = 0;
+  public isLocalMode = false;
   public selectedAlert: any = null;
+
+  private map!: L.Map;
+  private cycleInterval: any;
   private readonly localKeyword = "CLEBURNE";
 
   constructor(private http: HttpClient, private cdr: ChangeDetectorRef) { }
@@ -24,84 +25,110 @@ export class App implements OnInit, AfterViewInit {
   ngOnInit() {
     this.fetchData();
     setInterval(() => this.fetchData(), 30000);
+    this.startAlertCycle();
   }
 
   ngAfterViewInit() {
     this.initMap();
   }
 
-  private fetchData() {
-    this.getNews();
-    this.getTicker();
+  ngOnDestroy() {
+    if (this.cycleInterval) clearInterval(this.cycleInterval);
   }
 
-  // FIXED: Added back the missing toggle method
+  private fetchData() {
+    this.http.get<any[]>('/api/news/headlines').subscribe({
+      next: (data) => {
+        this.allHeadlines = data || [];
+        this.applyFilters();
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error("Fetch Error:", err)
+    });
+  }
+
+  private startAlertCycle() {
+    if (this.cycleInterval) clearInterval(this.cycleInterval);
+    this.cycleInterval = setInterval(() => this.nextAlert(), 8000);
+  }
+
+  public nextAlert() {
+    if (this.tickerItems.length > 0) {
+      this.currentIndex = (this.currentIndex + 1) % this.tickerItems.length;
+      this.cdr.detectChanges();
+    }
+  }
+
+  public prevAlert() {
+    if (this.tickerItems.length > 0) {
+      this.currentIndex = (this.currentIndex - 1 + this.tickerItems.length) % this.tickerItems.length;
+      this.cdr.detectChanges();
+    }
+  }
+
   public toggleViewMode() {
     this.isLocalMode = !this.isLocalMode;
+    this.currentIndex = 0; 
     this.applyFilters();
-  }
-
-  private initMap(): void {
-    this.map = L.map('map', {
-      zoomControl: true,
-      scrollWheelZoom: false,
-      dragging: true,
-    }).setView([34.7465, -92.2896], 7);
-
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }).addTo(this.map);
-
-    L.marker([35.4806, -91.9904]).addTo(this.map)
-      .bindPopup('ArkWatch HQ: Cleburne County');
   }
 
   private applyFilters() {
     if (this.isLocalMode) {
       this.newsHeadlines = this.allHeadlines.filter(h =>
-        h.headline.toUpperCase().includes(this.localKeyword)
-      );
-      this.tickerItems = this.allTickerItems.filter(t =>
-        t.text && t.text.toUpperCase().includes(this.localKeyword)
+        (h.Headline || h.headline)?.toUpperCase().includes(this.localKeyword)
       );
 
+      this.tickerItems = [...this.newsHeadlines];
+
       if (this.tickerItems.length === 0) {
-        this.tickerItems = [{ text: "NO ACTIVE LOCAL THREATS FOR CLEBURNE COUNTY", category: "info" }];
+        this.tickerItems = [{
+          Headline: "NO ACTIVE LOCAL THREATS: CLEBURNE COUNTY",
+          UrgencyLevel: "info",
+          Expiration: "N/A"
+        }];
       }
     } else {
       this.newsHeadlines = [...this.allHeadlines];
-      this.tickerItems = [...this.allTickerItems];
+      this.tickerItems = [...this.allHeadlines];
+
+      if (this.tickerItems.length === 0) {
+        this.tickerItems = [{
+          Headline: "ARKWATCH: NO ACTIVE STATEWIDE THREATS",
+          UrgencyLevel: "info",
+          Expiration: "N/A"
+        }];
+      }
     }
+    this.currentIndex = 0;
     this.cdr.detectChanges();
   }
 
-  getTicker() {
-    this.http.get<any[]>('/api/news/ticker').subscribe({
-      next: (result) => {
-        this.allTickerItems = result;
-        this.applyFilters();
-      },
-      error: (err) => console.error('Ticker Error:', err)
-    });
+  public openModalFromTicker() {
+    if (this.tickerItems.length > 0) {
+      this.openModal(this.tickerItems[this.currentIndex]);
+    }
   }
 
-  getNews() {
-    this.http.get<any[]>('/api/news/headlines').subscribe({
-      next: (result) => {
-        this.allHeadlines = result;
-        this.applyFilters();
-      },
-      error: (err) => console.error('News Error:', err)
-    });
+  private initMap(): void {
+    setTimeout(() => {
+      const container = document.getElementById('map');
+      if (!container) return;
+
+      this.map = L.map('map', { scrollWheelZoom: false }).setView([34.7465, -92.2896], 7);
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}').addTo(this.map);
+
+      L.marker([35.4806, -91.9904]).addTo(this.map)
+        .bindPopup('ArkWatch HQ: Heber Springs');
+
+      this.map.invalidateSize();
+    }, 200);
   }
 
   openModal(alert: any) {
-    this.selectedAlert = alert;
+    if (alert && (alert.headline || alert.Headline)) {
+      this.selectedAlert = alert;
+    }
   }
 
-  closeModal() {
-    this.selectedAlert = null;
-  }
+  closeModal() { this.selectedAlert = null; }
 }

@@ -11,7 +11,9 @@
         public record NwsResponse(List<NwsFeature> Features); //National Weather Service API response structure
         public record NwsFeature(NwsProperties Properties); //National Weather Service Feature structure
         public record NwsProperties(string Id, string Event, string Severity, string Description); //National Weather Service Properties structure
-
+        public string Expiration { get; set; } = "N/A";
+        public string HailSize { get; set; } = "0.00";
+        public string WindSpeed { get; set; } = "0";
 
     }
 }
